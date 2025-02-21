@@ -1,80 +1,59 @@
-import os
-import sys
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
-from sqlalchemy import create_engine, String, Integer, ForeignKey, Column
-from eralchemy2 import render_er
+# Importamos las bibliotecas necesarias
+import os  # Importa el módulo os para interactuar con el sistema operativo (aunque no se usa en este script)
+import sys  # Importa el módulo sys para manipular parámetros de entrada/salida (aunque tampoco se usa en este script)
+from sqlalchemy.orm import declarative_base, relationship  # Importa la clase base y relación de SQLAlchemy
+from sqlalchemy import create_engine, String, Integer, ForeignKey, Column  # Importa tipos de datos y funciones de SQLAlchemy
+from eralchemy2 import render_er  # Importa la función render_er para generar un diagrama visual de la base de datos
 
-# Define la base para los modelos de SQLAlchemy, permitiendo la creación de tablas.
+# Define la clase base para todos los modelos
 Base = declarative_base()
 
-# Define la tabla de usuarios, que almacenará la información de cada usuario registrado.
-class Usuario(Base):
-    __tablename__ = 'usuario'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String, nullable=False)
-    fecha_suscripcion: Mapped[str] = mapped_column(String, nullable=False)
-    favoritos = relationship("Favorito", back_populates="usuario")
-    posts = relationship("Post", back_populates="usuario")
-    comentarios = relationship("Comentario", back_populates="usuario")
+# Definición del modelo de la tabla "user"
+class User(Base):
+    __tablename__ = 'user'  # Nombre de la tabla en la base de datos
+    id = Column(Integer, primary_key=True)  # Define la columna 'id' como clave primaria
+    username = Column(String, unique=True, nullable=False)  # Define la columna 'username' como única y no nula
+    firstname = Column(String, nullable=False)  # Define la columna 'firstname' como no nula
+    lastname = Column(String, nullable=False)  # Define la columna 'lastname' como no nula
+    email = Column(String, unique=True, nullable=False)  # Define la columna 'email' como única y no nula
 
-# Define la tabla de planetas, que almacenará información sobre los planetas de Star Wars.
+    # Establece una relación con la tabla 'Favorito', indicando que un usuario puede tener varios favoritos
+    favoritos = relationship("Favorito", backref="usuario")
+
+# Definición del modelo de la tabla "planeta"
 class Planeta(Base):
-    __tablename__ = 'planeta'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    nombre: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    clima: Mapped[str] = mapped_column(String, nullable=False)
-    terreno: Mapped[str] = mapped_column(String, nullable=False)
-    favoritos = relationship("Favorito", back_populates="planeta")
+    __tablename__ = 'planeta'  # Nombre de la tabla en la base de datos
+    id = Column(Integer, primary_key=True)  # Define la columna 'id' como clave primaria
+    nombre = Column(String, unique=True, nullable=False)  # Define la columna 'nombre' como única y no nula
+    clima = Column(String, nullable=False)  # Define la columna 'clima' como no nula
+    terreno = Column(String, nullable=False)  # Define la columna 'terreno' como no nula
 
-# Define la tabla de personajes, que almacenará información sobre los personajes de Star Wars.
+    # Establece una relación con la tabla 'Favorito', indicando que un planeta puede ser marcado como favorito
+    favoritos = relationship("Favorito", backref="planeta")
+
+# Definición del modelo de la tabla "personaje"
 class Personaje(Base):
-    __tablename__ = 'personaje'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    nombre: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    especie: Mapped[str] = mapped_column(String, nullable=False)
-    altura: Mapped[str] = mapped_column(String, nullable=False)
-    favoritos = relationship("Favorito", back_populates="personaje")
+    __tablename__ = 'personaje'  # Nombre de la tabla en la base de datos
+    id = Column(Integer, primary_key=True)  # Define la columna 'id' como clave primaria
+    nombre = Column(String, unique=True, nullable=False)  # Define la columna 'nombre' como única y no nula
+    especie = Column(String, nullable=False)  # Define la columna 'especie' como no nula
+    altura = Column(String, nullable=False)  # Define la columna 'altura' como no nula
 
-# Tabla intermedia para almacenar los favoritos de cada usuario, permitiendo la relación con planetas y personajes.
+    # Establece una relación con la tabla 'Favorito', indicando que un personaje puede ser marcado como favorito
+    favoritos = relationship("Favorito", backref="personaje")
+
+# Definición del modelo de la tabla intermedia "favorito" (relación muchos a muchos)
 class Favorito(Base):
-    __tablename__ = 'favorito'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuario.id"))
-    planeta_id: Mapped[int] = mapped_column(ForeignKey("planeta.id"), nullable=True)
-    personaje_id: Mapped[int] = mapped_column(ForeignKey("personaje.id"), nullable=True)
-    usuario = relationship("Usuario", back_populates="favoritos")
-    planeta = relationship("Planeta", back_populates="favoritos")
-    personaje = relationship("Personaje", back_populates="favoritos")
+    __tablename__ = 'favorito'  # Nombre de la tabla en la base de datos
+    id = Column(Integer, primary_key=True)  # Define la columna 'id' como clave primaria
+    usuario_id = Column(Integer, ForeignKey('user.id'), nullable=False)  # Clave foránea a la tabla 'user', no nula
+    planeta_id = Column(Integer, ForeignKey('planeta.id'), nullable=True)  # Clave foránea a la tabla 'planeta', puede ser nula
+    personaje_id = Column(Integer, ForeignKey('personaje.id'), nullable=True)  # Clave foránea a la tabla 'personaje', puede ser nula
 
-# Define la tabla de publicaciones (posts), donde los usuarios pueden compartir contenido.
-class Post(Base):
-    __tablename__ = 'post'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuario.id"))
-    contenido: Mapped[str] = mapped_column(String, nullable=False)
-    usuario = relationship("Usuario", back_populates="posts")
-    comentarios = relationship("Comentario", back_populates="post")
-    media = relationship("Media", back_populates="post")
-
-# Define la tabla de comentarios, que permite a los usuarios comentar en los posts.
-class Comentario(Base):
-    __tablename__ = 'comentario'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    comentario_text: Mapped[str] = mapped_column(String, nullable=False)
-    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuario.id"))
-    post_id: Mapped[int] = mapped_column(ForeignKey("post.id"))
-    usuario = relationship("Usuario", back_populates="comentarios")
-    post = relationship("Post", back_populates="comentarios")
-
-# Define la tabla de medios, que almacena imágenes o videos relacionados con los posts.
-class Media(Base):
-    __tablename__ = 'media'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    url: Mapped[str] = mapped_column(String, nullable=False)
-    post_id: Mapped[int] = mapped_column(ForeignKey("post.id"))
-    post = relationship("Post", back_populates="media")
-
-# Genera un diagrama de la base de datos a partir de los modelos definidos.
-render_er(Base, 'diagram.png')
+# Generación del diagrama de la base de datos
+try:
+    result = render_er(Base, 'diagram.png')  # Llama a 'render_er' para generar el diagrama y guardarlo como 'diagram.png'
+    print("Success! Check the diagram.png file")  # Si todo sale bien, imprime el mensaje de éxito
+except Exception as e:
+    print("There was a problem generating the diagram")  # Si ocurre un error, muestra un mensaje de error
+    raise e  # Lanza nuevamente el error para depuración
